@@ -1,0 +1,36 @@
+name: Sync with Upstream
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'    # 每 5 分钟触发一次（GitHub 免费账号实测最稳）
+  workflow_dispatch:       # 还支持手动点一下立即同步
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SYNC_TOKEN }}
+
+      - name: Sync upstream
+        run: |
+          # 把这里改成你真正要同步的上游仓库地址！
+          UPSTREAM_REPO="https://github.com/buer2025/hook-test.git"
+
+          git remote add upstream "$UPSTREAM_REPO" 2>/dev/null || true
+          git fetch upstream
+          
+          # 切换到你的主分支（main 或 master，看你仓库现在是哪个）
+          git checkout main
+          
+          # 合并上游更新（保留你自己的文件）
+          git merge upstream/main -X ours --no-edit || git merge upstream/main --no-edit
+          
+          git push origin main
+
+      - name: Show result
+        if: always()
+        run: |
+          echo "Sync completed at $(date)"
